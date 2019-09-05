@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData">
+    <serverData>
+      <paths name="zx3@dgx-server:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/nfs/team205/zx3/PycharmProject/INVASE" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
