@@ -39,8 +39,7 @@ class PVS():
         self.latent_dim2 = 200      # Dimension of critic (discriminator) network
 
         self.batch_size = 1000      # Batch size
-        # self.epochs = 10000         # Epoch size (large epoch is needed due to the policy gradient framework)
-        self.epochs = 1000  # Epoch size (large epoch is needed due to the policy gradient framework)
+        self.epochs = 10000         # Epoch size (large epoch is needed due to the policy gradient framework)
         self.lamda = 0.1            # Hyper-parameter for the number of selected features
 
         self.input_shape = x_train.shape[1]     # Input dimension
@@ -240,6 +239,38 @@ class PVS():
 
         return np.asarray(val_prediction), np.asarray(dis_prediction)
 
+
+
+#%% Define Key TF selection class
+
+class KeyTF():
+    def __init__(self, adataset, selected_TF):
+        self.selected_TF = selected_TF
+        self.adataset = adataset
+
+    def cell_category(self):
+        print(self.adataset.obs['anno_final_print'].value_counts())
+
+    def implement_invase(self, selected_gene, selected_celltype = None):
+        if (selected_celltype is None):
+            cells_train = np.random.choice(range(self.adataset.shape[0]), 10000)
+        else:
+            cells_train = np.where(self.adataset.obs['anno_final_print'].isin(selected_celltype))[0]
+
+        adata = self.adataset[:, self.selected_TF]
+        adata = adata[cells_train, :]
+
+        print('Gene %s is chosen to be the labels' % (selected_gene))
+        Y_train = self.adataset.X[np.ix_(cells_train, self.adataset.var.GeneName.isin(selected_gene))]
+        X_train = adata.X.toarray()
+
+        # 1. PVS Class call
+        PVS_Alg = PVS(X_train, 'Syn1', 2)
+
+        # 2. Algorithm training
+        PVS_Alg.train(X_train, Y_train)
+
+        return(PVS_Alg)
 
 #%% Performance Metrics
 def performance_metric(score, g_truth):

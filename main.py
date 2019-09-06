@@ -47,11 +47,11 @@ if __name__ == '__main__':
     #x_train = x_train +10
     #x_test = x_test + 10
 
-    y_train = y_train[:,0].reshape(-1,1)
+    # y_train = y_train[:,0].reshape(-1,1)
 
     # %%
     # 1. PVS Class call
-    PVS_Alg = PVS(x_train, data_type)
+    PVS_Alg = PVS(x_train, data_type, output_shape=2)
 
     # 2. Algorithm training
     PVS_Alg.train(x_train, y_train)
