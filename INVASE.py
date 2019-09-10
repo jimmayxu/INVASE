@@ -220,7 +220,7 @@ class PVS():
             #%% Plot the progress
             dialog = 'Epoch: ' + str(epoch) + ', d_loss (Acc)): ' + str(d_loss[1]) + ', v_loss (Acc): ' + str(v_loss[1]) + ', g_loss: ' + str(np.round(g_loss,4))
 
-            if epoch % 100 == 0:
+            if epoch % 1000 == 0:
                 print(dialog)
 
     #%% Selected Features
@@ -253,17 +253,15 @@ class KeyTF():
 
     def implement_invase(self, selected_gene, selected_celltype = None):
         if (selected_celltype is None):
-            cells_train = np.random.choice(range(self.adataset.shape[0]), 10000)
+            cells_train = np.repeat(True, range(self.adataset.shape[0]))
         else:
             cells_train = np.where(self.adataset.obs['anno_final_print'].isin(selected_celltype))[0]
 
-        adata = self.adataset[:, self.selected_TF]
-        adata = adata[cells_train, :]
-
         print('Gene %s is chosen to be the labels' % (selected_gene))
-        Y_train = self.adataset.X[np.ix_(cells_train, self.adataset.var.GeneName.isin(selected_gene))]
-        X_train = adata.X.toarray()
-
+        Y_temp = self.adataset.X[np.ix_(cells_train, self.adataset.var.GeneName == selected_gene)]
+        Y_scale = np.interp(Y_temp, (Y_temp.min(), Y_temp.max()), (0, +1))
+        Y_train = np.concatenate((Y_scale, 1 - Y_scale),1)
+        X_train = self.adataset.X[np.ix_(cells_train, self.selected_TF)]
         # 1. PVS Class call
         PVS_Alg = PVS(X_train, 'Syn1', 2)
 
