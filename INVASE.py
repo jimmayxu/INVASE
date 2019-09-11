@@ -253,7 +253,7 @@ class KeyTF():
 
     def implement_invase(self, selected_gene, selected_celltype = None):
         if (selected_celltype is None):
-            cells_train = np.repeat(True, range(self.adataset.shape[0]))
+            cells_train = np.repeat(True, self.adataset.shape[0])
         else:
             cells_train = np.where(self.adataset.obs['anno_final_print'].isin(selected_celltype))[0]
 

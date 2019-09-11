@@ -16,7 +16,7 @@ TF_genes = np.where(adataset.var.GeneName.isin(TF_list_total))[0]
 gene_names = adataset.var.GeneName[TF_genes]
 
 adataset.obs['anno_final_print'].value_counts()
-###
+'''
 
 # T cell dataset
 DATAFILE = '../data/'
@@ -26,20 +26,21 @@ adataset = sc.read_h5ad(save_path)
 TF_genes = np.where(adataset.var.GeneName.isin(TF_list_total))[0]
 gene_names = adataset.var.GeneName[TF_genes]
 print(gene_names.size)
-adataset.obs['anno_final_print'].value_counts()
+adataset.obs['anno_final_v2_epi'].value_counts()
 
-###
+'''
 
+target_genes = ['CD8A',  'CD8B', 'FGR', 'ABCA1', 'A2M']
+cells_train = ['CD4+T','CD4+Tmem','CD8+T','CD8+Tmem','B_mature']
 
+loadnames = ['|'.join(cells_train) + '@' + x for x in target_genes]
 
-loadnames = [''.join(['CD4+T|CD4+Tmem|CD8+T|CD8+Tmem|B_mature@',x]) for x in ['CD8A','CD8B','FGR']]
+key_TF = pd.DataFrame(columns=['target_gene', 'testing_cells', 'key TFs'])
 
-key_TF = pd.DataFrame(columns=['name', 'TF'])
-
-for i, load_name in enumerate(loadnames):
-
-
+for target_gene in target_genes:
     # load json and create model
+    # load_name = '|'.join(cells_train) + '@' + target_gene
+    load_name = 'all_cells' + '@' + target_gene
     json_file = open('results/generator_%s.json' % load_name, 'r')
     loaded_model_json = json_file.read()
     json_file.close()
@@ -51,26 +52,29 @@ for i, load_name in enumerate(loadnames):
 
     # 3. Get the selection probability on the testing set
     # X_test generation
-    celltype_test = ['CD4+T']
+
+    for celltype_test in cells_train:
+        #cells_test = np.concatenate((np.random.choice(np.where(adataset.obs['anno_final_print'].isin(celltype_test))[0], 500),
+        #np.random.choice(range(adataset.shape[0]), 4000)))
+
+        cells_test = np.where(adataset.obs['anno_final_print']==celltype_test)[0]
+
+        X_test = adataset.X[np.ix_(cells_test, TF_genes)]
+
+        Sel_Prob_Test = np.asarray(Generator.predict(X_test))
+
+        Prob_Test = pd.DataFrame(Sel_Prob_Test)
+        Prob_Test.columns = gene_names
+        score = np.asarray(1. * (Prob_Test > 0.6))
+
+        key_TF = key_TF.append({'target_gene': target_gene,
+                       'testing_cells': celltype_test,
+                       'key TFs': np.asarray(gene_names[score.sum(0)/len(score)>0.9].values)}, ignore_index=True)
+        print('end')
 
 
-    cells_test = np.concatenate((np.random.choice(np.where(adataset.obs['anno_final_print'].isin(celltype_test))[0], 500),
-    np.random.choice(range(adataset.shape[0]), 4000)))
 
-    cells_test = np.where(adataset.obs['anno_final_print'].isin(celltype_test))[0]
-
-    X_test = adataset.X[np.ix_(cells_test, TF_genes)]
-
-
-    Sel_Prob_Test = np.asarray(Generator.predict(X_test))
-
-    Prob_Test = pd.DataFrame(Sel_Prob_Test)
-    Prob_Test.columns = gene_names
-    score = np.asarray(1. * (Prob_Test > 0.8))
-
-
-
-    key_TF.loc[i] = [loadnames , np.asarray(gene_names[score.sum(0)/len(score)>0.9].values)]
+    np.transpose(pd.DataFrame(np.unique(np.concatenate(key_TF['TF'][key_TF['target_gene']=='FGR'].tolist()), return_counts=True)))
 
 
     '''
@@ -83,17 +87,6 @@ for i, load_name in enumerate(loadnames):
     
     
     gene_names[score_load[:500].sum()/500>0.9].values
-    '''
-
-
-
-
-
-
-    '''
-    common key TF features
-    array(['ZNF831', 'YBX3', 'SOX4', 'ZNF34', 'MAFB', 'AEBP1', 'NR4A2',
-           'PBX1', 'ZBTB18', 'FOXO4', 'CASZ1', 'IRF8', 'HIC1'], dtype=object)
     '''
 
     # 5. Prediction
