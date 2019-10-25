@@ -23,7 +23,7 @@ from keras import backend as K
 # 2. Others
 import tensorflow as tf
 import numpy as np
-
+import scanpy as sc
 
 
 #%% Define PVS class
@@ -241,53 +241,77 @@ class PVS():
 
 
 
-#%% Define Key TF selection class
+# %% Define Key TF selection class
 
 class KeyTF():
-    def __init__(self, adataset, selected_TF):
-        self.selected_TF = selected_TF
+    def __init__(self, adataset, target_Genes, TF_list_total, raw_counts = False):
         self.adataset = adataset
+        self.TF_list_total = TF_list_total
+        self.target_Genes = target_Genes
+        self.raw_counts = raw_counts
 
-    def cell_category(self):
-        print(self.adataset.obs['anno_final_print'].value_counts())
+    # def cell_category(self):
+    #    print(self.adataset.obs.iloc[:,-1].value_counts())
 
-    def implement_invase(self, selected_gene, selected_celltype = None):
-        if (selected_celltype is None):
-            cells_train = np.repeat(True, self.adataset.shape[0])
+    def filter_matrix(self):
+        if self.raw_counts:
+            X = self.adataset.raw.X
+            GeneName = self.adataset.raw.var.GeneName
+            TF_genes = np.where(GeneName.isin(self.TF_list_total))[0]
+            print("%d out of total %d Transcription factors are involved in the dataset" % (
+                TF_genes.size, len(self.TF_list_total)))
+
+            Y_temp = X[:, np.where(GeneName.isin(self.target_Genes))[0]]
+            self.Y_all = sc.pp.scale(Y_temp)
+            X_temp = X[:, TF_genes]
+            self.X_train = sc.pp.scale(X_temp)
         else:
-            cells_train = np.where(self.adataset.obs['anno_final_print'].isin(selected_celltype))[0]
+            X = self.adataset.X
+            GeneName = self.adataset.var.GeneName
+            TF_genes = np.where(GeneName.isin(self.TF_list_total))[0]
+            print("%d out of total %d Transcription factors are involved in the dataset" % (
+                TF_genes.size, len(self.TF_list_total)))
+            print("%d out of %d selected highly variable genes are Transcription Factors" % (
+             TF_genes.size, GeneName.size))
 
-        print('Gene %s is chosen to be the labels' % (selected_gene))
-        Y_temp = self.adataset.X[np.ix_(cells_train, self.adataset.var.GeneName == selected_gene)]
-        Y_scale = np.interp(Y_temp, (Y_temp.min(), Y_temp.max()), (0, +1))
-        Y_train = np.concatenate((Y_scale, 1 - Y_scale),1)
-        X_train = self.adataset.X[np.ix_(cells_train, self.selected_TF)]
+            self.Y_all = X[:, GeneName == self.target_Genes]
+            self.X_train = X[:, TF_genes]
+
+    def implement_invase(self, gene):
+        #    cells_train = np.where(self.adataset.obs['anno_final_print'].isin(selected_celltype))[0]
+
+        print('target gene selected: %s' % (self.target_Genes[gene]))
+        Y_temp = self.Y_all[:, gene]
+        Y_scale = np.interp(Y_temp, (Y_temp.min(), Y_temp.max()), (0, +1)).reshape(-1,1)
+        Y_train = np.concatenate((Y_scale, 1 - Y_scale), 1)
         # 1. PVS Class call
-        PVS_Alg = PVS(X_train, 'Syn1', 2)
+        PVS_Alg = PVS(self.X_train, 'Syn1', 2)
 
         # 2. Algorithm training
-        PVS_Alg.train(X_train, Y_train)
+        PVS_Alg.train(self.X_train, Y_train)
 
-        return(PVS_Alg)
+        return (PVS_Alg)
+
+if __name__ == '__main__':
 
 #%% Performance Metrics
-def performance_metric(score, g_truth):
+    def performance_metric(score, g_truth):
 
-    n = len(score)
-    Temp_TPR = np.zeros([n,])
-    Temp_FDR = np.zeros([n,])
+        n = len(score)
+        Temp_TPR = np.zeros([n,])
+        Temp_FDR = np.zeros([n,])
 
-    for i in range(n):
+        for i in range(n):
 
-        # TPR
-        TPR_Nom = np.sum(score[i,:] * g_truth[i,:])
-        TPR_Den = np.sum(g_truth[i,:])
-        Temp_TPR[i] = 100 * float(TPR_Nom)/float(TPR_Den+1e-8)
+            # TPR
+            TPR_Nom = np.sum(score[i,:] * g_truth[i,:])
+            TPR_Den = np.sum(g_truth[i,:])
+            Temp_TPR[i] = 100 * float(TPR_Nom)/float(TPR_Den+1e-8)
 
-        # FDR
-        FDR_Nom = np.sum(score[i,:] * (1-g_truth[i,:]))
-        FDR_Den = np.sum(score[i,:])
-        Temp_FDR[i] = 100 * float(FDR_Nom)/float(FDR_Den+1e-8)
+            # FDR
+            FDR_Nom = np.sum(score[i,:] * (1-g_truth[i,:]))
+            FDR_Den = np.sum(score[i,:])
+            Temp_FDR[i] = 100 * float(FDR_Nom)/float(FDR_Den+1e-8)
 
-    return np.mean(Temp_TPR), np.mean(Temp_FDR), np.std(Temp_TPR), np.std(Temp_FDR)
+        return np.mean(Temp_TPR), np.mean(Temp_FDR), np.std(Temp_TPR), np.std(Temp_FDR)
 

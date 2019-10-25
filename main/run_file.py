@@ -1,9 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/env python:
 
 # %% Necessary packages
 # GPU node choice
 import sys, ast, os
 import time
+import scanpy as sc
+import numpy as np
+
+sys.path.append(os.getcwd())
+from INVASE import KeyTF
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 # The GPU id to use, usually either "0" or "1";
@@ -14,58 +19,55 @@ pipenv shell
 cd PycharmProject/INVASE/
 python main/run_file.py "[['CD8A',  'CD8B', 'FGR'], ['CD4+T', 'CD4+Tmem', 'CD8+T', 'CD8+Tmem', 'B_mature']]"
 
-python main/run_file.py "[['CD8A',  'CD8B', 'FGR', 'ABCA1', 'A2M']]" > log/log10092019.txt
+python3 main/run_file.py "['CD4', 'CD8A',  'CD8B', 'CD19', 'CTLA4', 'TIGIT', 'GNG4', 'GNG8', 'CDK1']" 2> log/log18092019.txt
 '''
 
-
-import numpy as np
-import scanpy as sc
-
-exec(open('INVASE.py').read())
-
-# selected_gene = ['CD8A',  'CD8B', 'FGR', 'ABCA1', 'A2M']
+#exec(open('INVASE.py').read())
+# selected_gene check:
+# 'ZBTB16' in TF_list_total
 
 if __name__ == '__main__':
     arg = ast.literal_eval(sys.argv[1])
-    selected_gene = arg[0] #['CD8A', ]
+    target_Genes = arg
     selected_celltype = None
     # selected_celltype = arg[1] #['CD4+T', 'CD4+Tmem', 'CD8+T', 'CD8+Tmem', 'B_mature']
 
-    assert isinstance(selected_gene, list)
+    assert isinstance(target_Genes, list)
     # assert isinstance(selected_celltype, list)
 
-    print('target gene selected: %s' % (selected_gene))
+    print('target gene selected: %s' % (target_Genes))
     # print('cell type selected: %s' % (selected_celltype))
     # %% Data loading
+    print("data loading")
     DATAFILE = '../data/thymus/'
-    save_path = DATAFILE + "A42.v01.yadult_raw.h5ad"
+    # save_path = DATAFILE + "A42.v01.yadult_raw.h5ad"
+    save_path = DATAFILE + "HTA07.A04.v01.adata_fig1.h5ad"
+
     adataset = sc.read_h5ad(save_path)
+    print ('data is loaded')
 
-
-    assert sum(adataset.var.GeneName.isin(selected_gene)) == len(selected_gene)
+    assert sum(adataset.raw.var.GeneName.isin(target_Genes)) == len(target_Genes)
 
     TF_list_total = np.loadtxt('main/TF_names.txt', dtype='str').tolist()
 
-    print("%d out of %d genes are selected highly variable genes" % (
-    adataset.var.GeneName.size, adataset.raw.var.GeneName.size))
+    #print("%d out of %d genes are selected highly variable genes" % (
+    # adataset.var.GeneName.size, adataset.raw.var.GeneName.size))
 
-    TF_genes = np.where(adataset.var.GeneName.isin(TF_list_total))[0]
-    print("%d out of %d selected highly variable genes are Transcription Factors" % (
-    TF_genes.size, adataset.var.GeneName.size))
+
 
     # %% run INVASE model
-    try1 = KeyTF(adataset = adataset, selected_TF = TF_genes)
-
-    for i in range(len(selected_gene)):
+    try1 = KeyTF(adataset = adataset, target_Genes = target_Genes, TF_list_total = TF_list_total, raw_counts = True)
+    try1.filter_matrix()
+    for gene in range(len(target_Genes)):
         t0 = time.time()
-        PVS_Alg = try1.implement_invase(selected_gene=selected_gene[i], selected_celltype=selected_celltype)
+        PVS_Alg = try1.implement_invase(gene=gene)
 
         t = (time.time() - t0)/60
-        save_name = 'all_cells' + '@' + selected_gene[i]
-        #save_name = '|'.join(selected_celltype) + '@' + selected_gene[i]
+        save_name = 'all_cells' + '@' + target_Genes[gene]
+        #save_name = '|'.join(selected_celltype) + '@' + gene
 
         model = PVS_Alg.generator
-        model.name = dict(selected_celltype = selected_celltype, selected_gene = selected_gene, time_spend = t)
+        model.name = dict(selected_celltype = selected_celltype, target_Gene = gene, time_spend = t)
 
 
         model_json = model.to_json()
@@ -73,6 +75,6 @@ if __name__ == '__main__':
             json_file.write(model_json)
         model.save_weights("results/weights_%s.h5" % save_name)
         print("Saved model: %s" % save_name)
-        print('cell type selected: %s' % (selected_celltype))
-        print('target gene selected: %s' % (selected_gene[i]))
+        print('cell type selected: %s' % ('all cells'))
+        print('target gene selected: %s' % (target_Genes[gene]))
         print('Time spent: %.2f minutes' % t)

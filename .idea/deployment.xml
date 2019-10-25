@@ -2,6 +2,13 @@
 <project version="4">
   <component name="PublishConfigData">
     <serverData>
+      <paths name="ubuntu@172.27.81.245:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mnt/PyCharmProjects/INVASE" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="zx3@dgx-server:22">
         <serverdata>
           <mappings>
