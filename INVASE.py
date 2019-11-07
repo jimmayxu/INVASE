@@ -24,7 +24,7 @@ from keras import backend as K
 import tensorflow as tf
 import numpy as np
 import scanpy as sc
-
+import pandas as pd
 
 #%% Define PVS class
 class PVS():
@@ -34,12 +34,12 @@ class PVS():
     x_train: training samples
     data_type: Syn1 to Syn 6
     '''
-    def __init__(self, x_train, data_type, output_shape):
+    def __init__(self, x_train, activation, output_shape):
         self.latent_dim1 = 100      # Dimension of actor (generator) network
         self.latent_dim2 = 200      # Dimension of critic (discriminator) network
 
-        self.batch_size = 1000      # Batch size
-        self.epochs = 10000         # Epoch size (large epoch is needed due to the policy gradient framework)
+        self.batch_size = 1000   # Batch size
+        self.epochs = 2000         # Epoch size (large epoch is needed due to the policy gradient framework)
         self.lamda = 0.1            # Hyper-parameter for the number of selected features
 
         self.input_shape = x_train.shape[1]     # Input dimension
@@ -47,8 +47,8 @@ class PVS():
         # final layer dimension
         self.output_shape = output_shape
 
-        # Actionvation. (For Syn1 and 2, relu, others, selu)
-        self.activation = 'relu' if data_type in ['Syn1','Syn2'] else 'selu'
+        # Activation. (For Syn1 and 2, relu, others, selu)
+        self.activation = activation
 
         # Use Adam optimizer with learning rate = 0.0001
         optimizer = Adam(0.0001)
@@ -128,7 +128,7 @@ class PVS():
         model.add(BatchNormalization())     # Use Batch norm for preventing overfitting
         model.add(Dense(200, activation=self.activation, name = 'dense2', kernel_regularizer=regularizers.l2(1e-3)))
         model.add(BatchNormalization())
-        model.add(Dense(self.output_shape, activation ='softmax', name = 'dense3', kernel_regularizer=regularizers.l2(1e-3)))
+        model.add(Dense(self.output_shape, activation='softmax', name='dense3', kernel_regularizer=regularizers.l2(1e-3)))
 
         model.summary()
 
@@ -153,7 +153,8 @@ class PVS():
         model.add(BatchNormalization())     # Use Batch norm for preventing overfitting
         model.add(Dense(200, activation=self.activation, name = 'v/dense2', kernel_regularizer=regularizers.l2(1e-3)))
         model.add(BatchNormalization())
-        model.add(Dense(self.output_shape, activation ='softmax', name = 'v/dense3', kernel_regularizer=regularizers.l2(1e-3)))
+        model.add(Dense(self.output_shape, activation='softmax', name='v/dense3', kernel_regularizer=regularizers.l2(1e-3)))
+
 
         model.summary()
 
@@ -181,6 +182,7 @@ class PVS():
     #%% Training procedure
     def train(self, x_train, y_train):
 
+        loss = pd.DataFrame()
         # For each epoch (actually iterations)
         for epoch in range(self.epochs):
 
@@ -220,8 +222,14 @@ class PVS():
             #%% Plot the progress
             dialog = 'Epoch: ' + str(epoch) + ', d_loss (Acc)): ' + str(d_loss[1]) + ', v_loss (Acc): ' + str(v_loss[1]) + ', g_loss: ' + str(np.round(g_loss,4))
 
+            loss = loss.append({'d_loss': d_loss[1],
+                           'v_loss': v_loss[1],
+                           'g_loss': g_loss},
+                          ignore_index=True)
             if epoch % 1000 == 0:
                 print(dialog)
+
+        return loss
 
     #%% Selected Features
     def output(self, x_train):

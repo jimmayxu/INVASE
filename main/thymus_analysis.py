@@ -26,7 +26,6 @@ adataset.var.GeneName[:10]
 
 
 
-
 # sc.pl.umap(adataset, color=  'louvain', legend_fontsize = 5)
 
 target_Genes = ['CD4', 'CD8A',  'CD8B', 'CD19', 'CTLA4', 'TIGIT', 'GNG4', 'GNG8', 'CDK1']

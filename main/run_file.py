@@ -17,7 +17,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "6"
 '''
 pipenv shell
 cd PycharmProject/INVASE/
-python main/run_file.py "[['CD8A',  'CD8B', 'FGR'], ['CD4+T', 'CD4+Tmem', 'CD8+T', 'CD8+Tmem', 'B_mature']]"
 
 python3 main/run_file.py "['CD4', 'CD8A',  'CD8B', 'CD19', 'CTLA4', 'TIGIT', 'GNG4', 'GNG8', 'CDK1']" 2> log/log18092019.txt
 '''
