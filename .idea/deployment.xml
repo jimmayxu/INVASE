@@ -16,6 +16,13 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="zx3@s130.millennium.berkeley.edu:22">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/data/yosef2/users/jimmy/INVASE" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
     </serverData>
   </component>
 </project>

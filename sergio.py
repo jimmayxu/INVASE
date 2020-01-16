@@ -1,10 +1,8 @@
 import numpy as np
 from gene import gene
-from scipy.stats import ttest_rel, ttest_ind, ranksums
 import sys
 import csv
 import networkx as nx
-from scipy.stats import wasserstein_distance
 
 class sergio (object):
 

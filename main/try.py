@@ -76,3 +76,5 @@ for i in range(20):
     plt.subplot(2, 1, 2)
     plt.imshow(x_test[i])
     plt.show()
+
+    ###### For cells in 1:c, for genes in 1:G and for factors in 1:F:

@@ -13,12 +13,13 @@ Instance-wise Variable Selection (INVASE) - with baseline networks
 
 #%% Necessary packages
 # 1. Keras
-from keras.layers import Input, Dense, Multiply
-from keras.layers import BatchNormalization
-from keras.models import Sequential, Model
-from keras.optimizers import Adam
-from keras import regularizers
-from keras import backend as K
+from tensorflow.keras.layers import Input, Dense, Multiply
+from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.optimizers import Adam
+# from tensorflow.keras.optimizers import Adam
+from tensorflow.keras import regularizers
+from tensorflow.keras import backend as K
 
 # 2. Others
 import tensorflow as tf
@@ -34,12 +35,19 @@ class PVS():
     x_train: training samples
     data_type: Syn1 to Syn 6
     '''
-    def __init__(self, x_train, activation, output_shape):
+    def __init__(
+            self,
+            x_train,
+            activation,
+            output_shape,
+            epochs: int = 10000,
+            batch_size: int = 1000
+    ):
         self.latent_dim1 = 100      # Dimension of actor (generator) network
         self.latent_dim2 = 200      # Dimension of critic (discriminator) network
 
-        self.batch_size = 1000   # Batch size
-        self.epochs = 2000         # Epoch size (large epoch is needed due to the policy gradient framework)
+        self.batch_size = batch_size   # Batch size
+        self.epochs = epochs         # Epoch size (large epoch is needed due to the policy gradient framework)
         self.lamda = 0.1            # Hyper-parameter for the number of selected features
 
         self.input_shape = x_train.shape[1]     # Input dimension
@@ -87,10 +95,10 @@ class PVS():
         y_final = y_true[:,(d+self.output_shape*2):]
 
         # A1. Compute the rewards of the actor network
-        Reward1 = tf.reduce_sum(y_final * tf.log(dis_prob + 1e-8), axis = 1)
+        Reward1 = tf.reduce_sum(y_final * tf.math.log(dis_prob + 1e-8), axis = 1)
 
         # A2. Compute the rewards of the actor network
-        Reward2 = tf.reduce_sum(y_final * tf.log(val_prob + 1e-8), axis = 1)
+        Reward2 = tf.reduce_sum(y_final * tf.math.log(val_prob + 1e-8), axis = 1)
 
         # Difference is the rewards
         Reward = Reward1 - Reward2

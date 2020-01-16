@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import sys, ast, time, os, random
 import scanpy as sc
@@ -10,7 +8,7 @@ from INVASE import PVS
 
 
 """
-python3 main/run_sergio1.py "[55, 48, 12, 53, 41, 29, 21]" "'selu'" 2> log/log05112019.txt
+python3 main/run_sergio1.py "[55, 48, 12, 53, 41, 29, 21]" "'bin2'" 2> log/log12112019.txt
 target_Genes = [55, 48, 12, 53, 41, 29, 21]
 """
 
@@ -25,10 +23,10 @@ if __name__ == '__main__':
 
     print("loading simualated data")
 
-    number_sc = 500
-    number_bins = 9
-    number_train = 400
-    expr_temp = np.loadtxt('SERGIO/raw_500sc.txt', dtype=float)
+    number_sc = 2500
+    number_bins = 2
+    number_train = 2000
+    expr_temp = np.loadtxt('SERGIO/raw_2500sc.txt', dtype=float)
     expr = expr_temp.reshape(number_bins, -1, number_sc)
 
     expr_train = [each_expr[:, :number_train] for each_expr in expr]
@@ -39,10 +37,10 @@ if __name__ == '__main__':
     print("simulated data is loaded")
     X = np.concatenate((expr_clean_train, expr_clean_test), axis=0)
     sc.pp.scale(X)
-    np.savetxt('SERGIO/scale_500sc.txt', X)
+    np.savetxt('SERGIO/scale_2500sc.txt', X)
     X_train_full = X[:(number_train * number_bins), :]
-    X_train = np.delete(X_train_full, target_Genes, 1)
-
+    # X_train = np.delete(X_train_full, target_Genes, 1)
+    X_train = X_train_full
 
 
     def sigmoid(X):
@@ -73,7 +71,7 @@ if __name__ == '__main__':
         save_name = 'sergio@%d' % (target_Gene)
         model = PVS_Alg.generator
         model.name = dict(number_genes=100,
-                          number_bins=9,
+                          number_bins=number_bins,
                           number_sc=number_sc,
                           noise_params=1,
                           decays=0.8,
