@@ -222,13 +222,13 @@ class PVS():
 
             #%% Train Generator
             # Use three things as the y_true: sel_prob, dis_prob, and ground truth (y_batch)
-            y_batch_final = np.concatenate( (sel_prob, np.asarray(dis_prob), np.asarray(val_prob), y_batch), axis = 1 )
+            y_batch_final = np.concatenate((sel_prob, np.asarray(dis_prob), np.asarray(val_prob), y_batch), axis=1)
 
             # Train the generator
             g_loss = self.generator.train_on_batch(x_batch, y_batch_final)
 
             #%% Plot the progress
-            dialog = 'Epoch: ' + str(epoch) + ', d_loss (Acc)): ' + str(d_loss[1]) + ', v_loss (Acc): ' + str(v_loss[1]) + ', g_loss: ' + str(np.round(g_loss,4))
+            dialog = 'Epoch: ' + str(epoch) + ', d_loss (Acc)): ' + str(np.round(d_loss[1], 4)) + ', v_loss (Acc): ' + str(np.round(v_loss[1], 4)) + ', g_loss: ' + str(np.round(g_loss,4))
 
             loss = loss.append({'d_loss': d_loss[1],
                            'v_loss': v_loss[1],
@@ -260,7 +260,7 @@ class PVS():
 # %% Define Key TF selection class
 
 class KeyTF():
-    def __init__(self, adataset, target_Genes, TF_list_total, raw_counts = False):
+    def __init__(self, adataset, target_Genes, TF_list_total, raw_counts=False):
         self.adataset = adataset
         self.TF_list_total = TF_list_total
         self.target_Genes = target_Genes
